@@ -10,6 +10,8 @@ package jvn;
 
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import irc.Irc;
 import irc.Sentence;
@@ -20,7 +22,9 @@ import java.io.Serializable;
 public class JvnCoordImpl 	
               extends UnicastRemoteObject 
 							implements JvnRemoteCoord{
-	
+	int nbObjectCreate;
+	HashMap<String,JvnObject> listNameJvnObject;
+	ArrayList<JvnControlePartageObject> listControlePartageObject;
 
 	public static void main(String argv[]) 
 	{
@@ -44,7 +48,9 @@ public class JvnCoordImpl
   * @throws JvnException
   **/
 	private JvnCoordImpl() throws Exception {
-		// to be completed
+		nbObjectCreate = 0;
+		listNameJvnObject = new HashMap<String,JvnObject>();
+		listControlePartageObject = new ArrayList<JvnControlePartageObject>();
 	}
 
   /**
@@ -54,8 +60,9 @@ public class JvnCoordImpl
   **/
   public int jvnGetObjectId()
   throws java.rmi.RemoteException,jvn.JvnException {
-    // to be completed 
-    return 0;
+	int tmp = nbObjectCreate;
+	nbObjectCreate++;
+    return tmp;
   }
   
   /**
@@ -68,7 +75,9 @@ public class JvnCoordImpl
   **/
   public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
   throws java.rmi.RemoteException,jvn.JvnException{
-    // to be completed 
+	  listNameJvnObject.put(jon, jo);
+	  JvnControlePartageObject ctrl = new JvnControlePartageObject(jo.jvnGetObjectId(),jo.jvnGetObjectState(),js);
+	  listControlePartageObject.add(ctrl);
   }
   
   /**
@@ -79,8 +88,13 @@ public class JvnCoordImpl
   **/
   public JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
   throws java.rmi.RemoteException,jvn.JvnException{
-    // to be completed 
-    return null;
+    JvnObject jo = listNameJvnObject.get(jon);
+    if(jo!=null)
+    {
+	    JvnControlePartageObject ctrl = listControlePartageObject.get(jo.jvnGetObjectId());
+		ctrl.addServer(js);
+    }
+    return jo;
   }
   
   /**
@@ -92,8 +106,9 @@ public class JvnCoordImpl
   **/
    public Serializable jvnLockRead(int joi, JvnRemoteServer js)
    throws java.rmi.RemoteException, JvnException{
-    // to be completed
-    return null;
+	   JvnControlePartageObject ctrl = listControlePartageObject.get(joi);
+	   ctrl.newReader(js);
+	   return ctrl.getObject();
    }
 
   /**
@@ -105,8 +120,9 @@ public class JvnCoordImpl
   **/
    public Serializable jvnLockWrite(int joi, JvnRemoteServer js)
    throws java.rmi.RemoteException, JvnException{
-    // to be completed
-    return null;
+	   JvnControlePartageObject ctrl = listControlePartageObject.get(joi);
+	   ctrl.newWriter(js);
+	   return ctrl.getObject();
    }
 
 	/**
